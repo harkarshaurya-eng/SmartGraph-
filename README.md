@@ -11,7 +11,7 @@ How to start the program:
 5)type this exact command 
 ```
 git clone https://github.com/harkarshaurya-eng/SmartGraph-.git
-cd SmartGraph
+cd SmartGraph-
 pip install -r requirements.txt
 python main.py
 ```
