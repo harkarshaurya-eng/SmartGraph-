@@ -20,7 +20,7 @@ class Graph3DTab(tk.Frame):
     def __init__(self, parent: ttk.Notebook) -> None:
         super().__init__(parent, bg="#ffffff")
 
-        self.draw_mode_var = tk.StringVar(value="Point")
+        self.draw_mode_var = tk.StringVar(value="Dot")
         self.draw_coords_var = tk.StringVar(value="1, 2, 3")
         self.draw_color_var = tk.StringVar(value="#1e63d6")
         self.shade_coords_var = tk.StringVar(value="0,0,0; 2,0,0; 2,2,0; 0,2,0")
@@ -54,7 +54,7 @@ class Graph3DTab(tk.Frame):
         intro = tk.Label(
             outer_frame,
             text=(
-                "Draw 3D points or lines, shade polygon faces from coordinates, and drag on the canvas "
+                "Draw 3D dots, lines, or paths, shade polygon faces from coordinates, and drag on the canvas "
                 "to rotate the view around the fixed origin (0, 0, 0)."
             ),
             font=("Arial", 10),
@@ -136,7 +136,7 @@ class Graph3DTab(tk.Frame):
         self.canvas.bind("<ButtonRelease-1>", self.on_mouse_release)
 
     def build_draw_section(self, parent: tk.Frame) -> None:
-        """Create the draw section for points and lines."""
+        """Create the draw section for dots, lines, and paths."""
         section_title = tk.Label(
             parent,
             text="Draw Objects",
@@ -154,7 +154,7 @@ class Graph3DTab(tk.Frame):
         )
         draw_mode_combo = ttk.Combobox(
             section_frame,
-            values=("Point", "Line"),
+            values=("Dot", "Line", "Path"),
             textvariable=self.draw_mode_var,
             state="readonly",
             width=25,
@@ -177,8 +177,9 @@ class Graph3DTab(tk.Frame):
         draw_help = tk.Label(
             section_frame,
             text=(
-                "Point example: 1, 2, 3\n"
-                "Line example: 0,0,0; 3,2,1"
+                "Dot example: 1, 2, 3\n"
+                "Line example: 0,0,0; 3,2,1\n"
+                "Path example: 0,0,0; 2,1,0; 3,1,2"
             ),
             font=("Arial", 9),
             bg="#ffffff",
@@ -284,24 +285,26 @@ class Graph3DTab(tk.Frame):
         )
 
     def add_draw_object(self) -> None:
-        """Add a point or line to the scene."""
+        """Add a dot, line, or path to the scene."""
         object_type = self.draw_mode_var.get()
         color = self.draw_color_var.get().strip() or "#1e63d6"
 
         try:
             self.validate_color(color)
             points = self.parse_points(self.draw_coords_var.get())
-            if object_type == "Point" and len(points) != 1:
-                raise ValueError("For a point, enter exactly one coordinate such as 1, 2, 3.")
+            if object_type == "Dot" and len(points) != 1:
+                raise ValueError("For a dot, enter exactly one coordinate such as 1, 2, 3.")
             if object_type == "Line" and len(points) != 2:
                 raise ValueError("For a line, enter exactly two coordinates such as 0,0,0; 3,2,1.")
+            if object_type == "Path" and len(points) < 2:
+                raise ValueError("For a path, enter at least two coordinates such as 0,0,0; 2,1,0; 3,1,2.")
         except ValueError as error:
             self.set_status(str(error), is_error=True)
             return
 
         self.scene_objects.append(
             {
-                "type": object_type.lower(),
+                "type": "point" if object_type == "Dot" else object_type.lower(),
                 "points": points,
                 "color": color,
             }
@@ -431,12 +434,9 @@ class Graph3DTab(tk.Frame):
                     width=2,
                     stipple="gray25",
                 )
-            elif object_type == "line":
+            elif object_type in {"line", "path"}:
                 self.canvas.create_line(
-                    projected_points[0][0],
-                    projected_points[0][1],
-                    projected_points[1][0],
-                    projected_points[1][1],
+                    *[coordinate for point in projected_points for coordinate in point],
                     fill=color,
                     width=3,
                 )
@@ -534,12 +534,13 @@ class Graph3DTab(tk.Frame):
         """Update the scene summary text."""
         point_count = sum(1 for item in self.scene_objects if item["type"] == "point")
         line_count = sum(1 for item in self.scene_objects if item["type"] == "line")
+        path_count = sum(1 for item in self.scene_objects if item["type"] == "path")
         polygon_count = sum(1 for item in self.scene_objects if item["type"] == "polygon")
         self.scene_info_var.set(
             "Rotate: drag inside the 3D view.\n"
             "Center: the view always rotates around the fixed origin (0, 0, 0).\n"
             f"Scene objects: {len(self.scene_objects)} total\n"
-            f"Points: {point_count}   Lines: {line_count}   Shaded faces: {polygon_count}"
+            f"Dots: {point_count}   Lines: {line_count}   Paths: {path_count}   Shaded faces: {polygon_count}"
         )
 
     def set_status(self, message: str, is_error: bool) -> None:

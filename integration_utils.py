@@ -75,13 +75,17 @@ def calculate_double_integral(
         "y": (y_lower_text, y_upper_text),
     }
     limits = _parse_limits(limit_texts, variable_order)
+    _validate_sampled_region(limits, variable_order)
 
     step_results = _calculate_integral_steps(expression, variable_order, limits)
     final_answer = sp.simplify(step_results[-1]["result"])
     meaning = (
         "Since f(x, y) = 1, this result represents the area of the selected region."
         if sp.simplify(expression - 1) == 0
-        else "This represents the volume under the surface z = f(x, y) over the selected region."
+        else (
+            "This represents the signed accumulation of f(x, y) over the selected region. "
+            "When f(x, y) stays nonnegative, you can interpret it as the volume under z = f(x, y)."
+        )
     )
 
     return {
@@ -119,13 +123,17 @@ def calculate_triple_integral(
         "z": (z_lower_text, z_upper_text),
     }
     limits = _parse_limits(limit_texts, variable_order)
+    _validate_sampled_region(limits, variable_order)
 
     step_results = _calculate_integral_steps(expression, variable_order, limits)
     final_answer = sp.simplify(step_results[-1]["result"])
     meaning = (
         "Since f(x, y, z) = 1, this result represents the volume of the selected 3D region."
         if sp.simplify(expression - 1) == 0
-        else "This represents the total accumulated value of f(x, y, z) over the selected 3D region."
+        else (
+            "This represents the signed accumulated value of f(x, y, z) over the selected 3D region. "
+            "When f(x, y, z) is nonnegative, you can interpret it as a total density or total mass."
+        )
     )
 
     return {
@@ -281,6 +289,73 @@ def _validate_limit_order(
 
     if difference.is_negative:
         raise ValueError("The lower limit cannot be greater than the upper limit.")
+
+
+def _validate_sampled_region(
+    limits: dict[str, tuple[sp.Expr, sp.Expr]],
+    variable_order: Sequence[str],
+) -> None:
+    """Check sampled points so nested bounds stay ordered throughout the region."""
+    outer_to_inner = list(reversed(variable_order))
+    _validate_bounds_recursively(outer_to_inner, limits, {})
+
+
+def _validate_bounds_recursively(
+    remaining_variables: list[str],
+    limits: dict[str, tuple[sp.Expr, sp.Expr]],
+    assignments: dict[str, float],
+) -> None:
+    """Recursively sample nested limits from outer variables toward inner variables."""
+    if not remaining_variables:
+        return
+
+    variable_name = remaining_variables[0]
+    lower_limit, upper_limit = limits[variable_name]
+    lower_value = _evaluate_numeric_expression(lower_limit, assignments)
+    upper_value = _evaluate_numeric_expression(upper_limit, assignments)
+
+    if lower_value is None or upper_value is None:
+        raise ValueError(
+            "The limits could not be evaluated over the selected region. Please revise the bounds."
+        )
+
+    if lower_value > upper_value + 1e-9:
+        raise ValueError(
+            "The lower limit becomes greater than the upper limit inside the selected region."
+        )
+
+    if len(remaining_variables) == 1:
+        return
+
+    sample_count = 7 if not assignments else 5
+    for sampled_value in _sample_interval(lower_value, upper_value, sample_count):
+        next_assignments = dict(assignments)
+        next_assignments[variable_name] = sampled_value
+        _validate_bounds_recursively(remaining_variables[1:], limits, next_assignments)
+
+
+def _sample_interval(lower_value: float, upper_value: float, count: int) -> list[float]:
+    """Return evenly spaced values in a numeric interval."""
+    if count <= 1 or abs(upper_value - lower_value) < 1e-9:
+        return [lower_value]
+
+    step = (upper_value - lower_value) / (count - 1)
+    return [lower_value + step * index for index in range(count)]
+
+
+def _evaluate_numeric_expression(expression: sp.Expr, assignments: dict[str, float]) -> float | None:
+    """Evaluate an expression numerically at sampled variable values."""
+    try:
+        substituted = expression.subs({SYMBOLS[name]: value for name, value in assignments.items()})
+        numeric_value = complex(sp.N(substituted))
+    except (TypeError, ValueError, ZeroDivisionError):
+        return None
+
+    if abs(numeric_value.imag) > 1e-7:
+        return None
+    if not sp.Float(numeric_value.real).is_finite:
+        return None
+    return float(numeric_value.real)
 
 
 def _parse_triple_order(order: str) -> tuple[str, str, str]:

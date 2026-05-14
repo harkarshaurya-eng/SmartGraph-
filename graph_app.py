@@ -45,7 +45,7 @@ class SmartGraphApp:
 
         heading = tk.Label(
             main_frame,
-            text="SmartGraph - Variable-Limit Integration and Interactive 3D Graph Tool",
+            text="SmartGraph - Adaptive Integration Graphs and Interactive 3D Graph Tool",
             font=("Arial", 18, "bold"),
             bg="#f5f7fb",
             fg="#1f2d3d",
@@ -55,8 +55,8 @@ class SmartGraphApp:
         subtitle = tk.Label(
             main_frame,
             text=(
-                "Use variable bounds in the calculus tabs, or open the 3D graph tab to draw and shade "
-                "objects around the fixed origin."
+                "Use variable bounds in the calculus tabs to preview the actual region from your limits, "
+                "or open the 3D graph tab to draw and shade objects around the fixed origin."
             ),
             font=("Arial", 11),
             bg="#f5f7fb",
