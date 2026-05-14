@@ -34,6 +34,7 @@ class IntegrationTabBase(tk.Frame):
         self.status_var = tk.StringVar(value="")
         self.visual_text_var = tk.StringVar(value="")
         self.status_label: tk.Label | None = None
+        self.help_label: tk.Label | None = None
 
         self.build_base_ui(intro_text)
         self.reset_visual()
@@ -263,6 +264,19 @@ class IntegrationTabBase(tk.Frame):
         combo.set(self.order_values[0])
         return combo
 
+    def add_help_text(self, row_index: int, text: str) -> None:
+        """Add a short help label below the form."""
+        self.help_label = tk.Label(
+            self.form_frame,
+            text=text,
+            font=("Arial", 9),
+            bg="#ffffff",
+            fg="#52667a",
+            justify="left",
+            wraplength=390,
+        )
+        self.help_label.grid(row=row_index, column=0, columnspan=2, sticky="w", pady=(8, 0))
+
     def set_output(self, text: str) -> None:
         """Replace the output text."""
         self.output_text.delete("1.0", tk.END)
@@ -313,6 +327,10 @@ class IntegrationTabBase(tk.Frame):
             return lower_value - 1.0, upper_value + 1.0
         return lower_value, upper_value
 
+    def has_variable_limits(self, result: dict[str, object]) -> bool:
+        """Return True when any bound depends on a variable."""
+        return bool(result.get("has_variable_limits"))
+
 
 class DoubleIntegrationTab(IntegrationTabBase):
     """Double integration tab."""
@@ -336,6 +354,10 @@ class DoubleIntegrationTab(IntegrationTabBase):
         self.y_lower_entry = self.add_entry_field(3, "y lower limit", "0")
         self.y_upper_entry = self.add_entry_field(4, "y upper limit", "2")
         self.order_combo = self.add_order_field(5)
+        self.add_help_text(
+            6,
+            "Variable limits are supported. Example: for order dx dy, x bounds may use y, such as x = 0 to y.",
+        )
 
         self.entries = [
             self.function_entry,
@@ -382,14 +404,33 @@ class DoubleIntegrationTab(IntegrationTabBase):
 
         self.visual_canvas.create_line(40, 190, 320, 190, fill="#1f2d3d", width=2)
         self.visual_canvas.create_line(70, 205, 70, 35, fill="#1f2d3d", width=2)
-        self.visual_canvas.create_rectangle(120, 105, 250, 170, fill="#d7e8ff", outline="#2d6cdf", width=2)
-        self.visual_canvas.create_text(185, 88, text="Shaded x-y region", font=("Arial", 10, "bold"), fill="#2d6cdf")
+        self.visual_canvas.create_rectangle(
+            120,
+            105,
+            250,
+            170,
+            fill="#d7e8ff",
+            outline="#2d6cdf",
+            width=2,
+        )
+        self.visual_canvas.create_text(
+            185,
+            88,
+            text="Shaded x-y region",
+            font=("Arial", 10, "bold"),
+            fill="#2d6cdf",
+        )
         self.visual_canvas.create_text(325, 205, text="x", font=("Arial", 10, "bold"), fill="#1f2d3d")
         self.visual_canvas.create_text(58, 30, text="y", font=("Arial", 10, "bold"), fill="#1f2d3d")
 
     def draw_visual_for_result(self, result: dict[str, object]) -> None:
         """Draw the shaded region and a simple volume sketch."""
         self.clear_visual_canvas()
+
+        if self.has_variable_limits(result):
+            self.draw_variable_limit_region(order=result["order"])
+            self.visual_text_var.set(self.build_variable_limit_explanation(result))
+            return
 
         x_lower, x_upper = result["limits"]["x"]
         y_lower, y_upper = result["limits"]["y"]
@@ -420,8 +461,20 @@ class DoubleIntegrationTab(IntegrationTabBase):
         zero_y = map_y(0.0) if y_min <= 0.0 <= y_max else bottom_margin
         self.visual_canvas.create_line(left_margin, zero_y, right_margin, zero_y, fill="#1f2d3d", width=2)
         self.visual_canvas.create_line(zero_x, bottom_margin, zero_x, top_margin, fill="#1f2d3d", width=2)
-        self.visual_canvas.create_text(right_margin + 12, zero_y + 10, text="x", font=("Arial", 10, "bold"), fill="#1f2d3d")
-        self.visual_canvas.create_text(zero_x - 10, top_margin - 10, text="y", font=("Arial", 10, "bold"), fill="#1f2d3d")
+        self.visual_canvas.create_text(
+            right_margin + 12,
+            zero_y + 10,
+            text="x",
+            font=("Arial", 10, "bold"),
+            fill="#1f2d3d",
+        )
+        self.visual_canvas.create_text(
+            zero_x - 10,
+            top_margin - 10,
+            text="y",
+            font=("Arial", 10, "bold"),
+            fill="#1f2d3d",
+        )
 
         rect_left = map_x(x_lower_value)
         rect_right = map_x(x_upper_value)
@@ -476,7 +529,14 @@ class DoubleIntegrationTab(IntegrationTabBase):
                 (rect_right, rect_bottom, rect_right + shift_x, rect_bottom + shift_y),
                 (rect_left, rect_bottom, rect_left + shift_x, rect_bottom + shift_y),
             ):
-                self.visual_canvas.create_line(start_x, start_y, end_x, end_y, fill="#1e63d6", dash=(4, 2))
+                self.visual_canvas.create_line(
+                    start_x,
+                    start_y,
+                    end_x,
+                    end_y,
+                    fill="#1e63d6",
+                    dash=(4, 2),
+                )
 
             self.visual_canvas.create_text(
                 rect_right + shift_x - 6,
@@ -487,6 +547,29 @@ class DoubleIntegrationTab(IntegrationTabBase):
             )
 
         self.visual_text_var.set(self.build_visual_explanation(result))
+
+    def draw_variable_limit_region(self, order: str) -> None:
+        """Draw a conceptual curved region for variable-dependent bounds."""
+        self.visual_canvas.create_line(40, 190, 320, 190, fill="#1f2d3d", width=2)
+        self.visual_canvas.create_line(70, 205, 70, 35, fill="#1f2d3d", width=2)
+        self.visual_canvas.create_text(325, 205, text="x", font=("Arial", 10, "bold"), fill="#1f2d3d")
+        self.visual_canvas.create_text(58, 30, text="y", font=("Arial", 10, "bold"), fill="#1f2d3d")
+
+        if order == "dx dy":
+            region_points = [90, 170, 115, 110, 150, 80, 200, 88, 240, 120, 260, 170, 90, 170]
+            label_text = "x changes with y"
+        else:
+            region_points = [120, 170, 145, 120, 180, 92, 220, 95, 245, 118, 245, 170, 120, 170]
+            label_text = "y changes with x"
+
+        self.visual_canvas.create_polygon(
+            *region_points,
+            fill="#d7e8ff",
+            outline="#2d6cdf",
+            width=2,
+            smooth=True,
+        )
+        self.visual_canvas.create_text(190, 72, text=label_text, font=("Arial", 10, "bold"), fill="#2d6cdf")
 
     def build_visual_explanation(self, result: dict[str, object]) -> str:
         """Build the student-friendly explanation beside the graph."""
@@ -508,6 +591,26 @@ class DoubleIntegrationTab(IntegrationTabBase):
             "The lifted blue top suggests the surface z = f(x, y) above that base.\n\n"
             "A double integral adds many thin vertical columns over the shaded region. "
             "Adding all of those small column volumes gives the total volume under the surface."
+        )
+
+    def build_variable_limit_explanation(self, result: dict[str, object]) -> str:
+        """Explain a variable-dependent 2D region."""
+        x_lower, x_upper = result["limits"]["x"]
+        y_lower, y_upper = result["limits"]["y"]
+
+        if result["order"] == "dx dy":
+            return (
+                "This region is not a simple rectangle because the x-bounds can depend on y.\n\n"
+                f"Here, x runs from {sp.sstr(x_lower)} to {sp.sstr(x_upper)} while y runs from "
+                f"{sp.sstr(y_lower)} to {sp.sstr(y_upper)}.\n\n"
+                "As y changes, the horizontal width of the region changes too, which is why the shaded shape bends."
+            )
+
+        return (
+            "This region is not a simple rectangle because the y-bounds can depend on x.\n\n"
+            f"Here, y runs from {sp.sstr(y_lower)} to {sp.sstr(y_upper)} while x runs from "
+            f"{sp.sstr(x_lower)} to {sp.sstr(x_upper)}.\n\n"
+            "As x changes, the vertical height of the region changes too, which is why the shaded shape bends."
         )
 
 
@@ -542,6 +645,10 @@ class TripleIntegrationTab(IntegrationTabBase):
         self.z_lower_entry = self.add_entry_field(5, "z lower limit", "0")
         self.z_upper_entry = self.add_entry_field(6, "z upper limit", "1")
         self.order_combo = self.add_order_field(7)
+        self.add_help_text(
+            8,
+            "Variable limits are supported. Example: for order dx dy dz, x bounds may use y and z, and y bounds may use z.",
+        )
 
         self.entries = [
             self.function_entry,
@@ -615,8 +722,13 @@ class TripleIntegrationTab(IntegrationTabBase):
         self.visual_canvas.create_text(284, 126, text="y", font=("Arial", 10, "bold"), fill="#1f2d3d")
 
     def draw_visual_for_result(self, result: dict[str, object]) -> None:
-        """Draw a cuboid that represents the integration region."""
+        """Draw a cuboid or conceptual region for triple integration."""
         self.clear_visual_canvas()
+
+        if self.has_variable_limits(result):
+            self.draw_variable_limit_volume()
+            self.visual_text_var.set(self.build_variable_limit_explanation(result))
+            return
 
         x_lower, x_upper = result["limits"]["x"]
         y_lower, y_upper = result["limits"]["y"]
@@ -692,11 +804,68 @@ class TripleIntegrationTab(IntegrationTabBase):
         expression_is_one = sp.simplify(result["function"] - 1) == 0
         label_text = "Volume region" if expression_is_one else "Accumulation region"
         self.visual_canvas.create_text(290, 42, text=label_text, font=("Arial", 10, "bold"), fill="#2d6cdf")
-        self.visual_canvas.create_text(right + 14, bottom + 8, text=f"x: {sp.sstr(x_lower)} to {sp.sstr(x_upper)}", anchor="w", font=("Arial", 9))
-        self.visual_canvas.create_text(back_right[0] + 12, back_right[1] - 6, text=f"y: {sp.sstr(y_lower)} to {sp.sstr(y_upper)}", anchor="w", font=("Arial", 9))
-        self.visual_canvas.create_text(left - 6, top - 10, text=f"z: {sp.sstr(z_lower)} to {sp.sstr(z_upper)}", anchor="e", font=("Arial", 9))
+        self.visual_canvas.create_text(
+            right + 14,
+            bottom + 8,
+            text=f"x: {sp.sstr(x_lower)} to {sp.sstr(x_upper)}",
+            anchor="w",
+            font=("Arial", 9),
+        )
+        self.visual_canvas.create_text(
+            back_right[0] + 12,
+            back_right[1] - 6,
+            text=f"y: {sp.sstr(y_lower)} to {sp.sstr(y_upper)}",
+            anchor="w",
+            font=("Arial", 9),
+        )
+        self.visual_canvas.create_text(
+            left - 6,
+            top - 10,
+            text=f"z: {sp.sstr(z_lower)} to {sp.sstr(z_upper)}",
+            anchor="e",
+            font=("Arial", 9),
+        )
 
         self.visual_text_var.set(self.build_visual_explanation(result))
+
+    def draw_variable_limit_volume(self) -> None:
+        """Draw a conceptual 3D region for variable-dependent limits."""
+        front_points = [95, 165, 200, 165, 220, 110, 125, 95]
+        back_points = [140, 138, 245, 138, 265, 82, 170, 67]
+
+        self.visual_canvas.create_polygon(
+            *front_points,
+            fill="#eef5ff",
+            outline="#2d6cdf",
+            width=2,
+            smooth=True,
+        )
+        self.visual_canvas.create_polygon(
+            *back_points,
+            fill="#d7e8ff",
+            outline="#2d6cdf",
+            width=2,
+            smooth=True,
+        )
+
+        for start_point, end_point in (
+            ((95, 165), (140, 138)),
+            ((200, 165), (245, 138)),
+            ((220, 110), (265, 82)),
+            ((125, 95), (170, 67)),
+        ):
+            self.visual_canvas.create_line(*start_point, *end_point, fill="#2d6cdf", dash=(4, 2))
+
+        self.visual_canvas.create_text(
+            265,
+            50,
+            text="Region changes with outer variables",
+            font=("Arial", 10, "bold"),
+            fill="#2d6cdf",
+        )
+        self.visual_canvas.create_text(290, 177, text="x", font=("Arial", 10, "bold"), fill="#1f2d3d")
+        self.visual_canvas.create_text(106, 58, text="z", font=("Arial", 10, "bold"), fill="#1f2d3d")
+        self.visual_canvas.create_text(285, 112, text="y", font=("Arial", 10, "bold"), fill="#1f2d3d")
 
     def build_visual_explanation(self, result: dict[str, object]) -> str:
         """Build the student-friendly explanation beside the cuboid."""
@@ -712,4 +881,13 @@ class TripleIntegrationTab(IntegrationTabBase):
             "The box shows the region in space where x, y, and z are allowed to vary.\n\n"
             "A triple integral adds the value of f(x, y, z) over many tiny volume cells inside that region.\n\n"
             "So the answer is the total accumulated value over the full 3D box, not just the box volume."
+        )
+
+    def build_variable_limit_explanation(self, result: dict[str, object]) -> str:
+        """Explain a variable-dependent 3D region."""
+        order_text = result["order"]
+        return (
+            "This 3D region is not a simple box because some inner bounds depend on outer variables.\n\n"
+            f"The chosen order is {order_text}, so each inner slice can change size as the outer variables change.\n\n"
+            "That is why the sketch bends instead of staying rectangular in every direction."
         )

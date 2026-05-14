@@ -62,13 +62,6 @@ def calculate_double_integral(
 ) -> dict[str, object]:
     """Calculate a double integral with step-by-step details."""
     expression = parse_function(function_text, ("x", "y"))
-    x_lower = _parse_limit(x_lower_text)
-    x_upper = _parse_limit(x_upper_text)
-    y_lower = _parse_limit(y_lower_text)
-    y_upper = _parse_limit(y_upper_text)
-
-    _validate_limit_order(x_lower, x_upper)
-    _validate_limit_order(y_lower, y_upper)
 
     if order == "dx dy":
         variable_order = ("x", "y")
@@ -77,17 +70,18 @@ def calculate_double_integral(
     else:
         raise ValueError("Please choose a valid integration order.")
 
-    limits = {
-        "x": (x_lower, x_upper),
-        "y": (y_lower, y_upper),
+    limit_texts = {
+        "x": (x_lower_text, x_upper_text),
+        "y": (y_lower_text, y_upper_text),
     }
+    limits = _parse_limits(limit_texts, variable_order)
 
     step_results = _calculate_integral_steps(expression, variable_order, limits)
     final_answer = sp.simplify(step_results[-1]["result"])
     meaning = (
         "Since f(x, y) = 1, this result represents the area of the selected region."
         if sp.simplify(expression - 1) == 0
-        else "This represents the volume under the surface z = f(x, y) over the selected rectangular region."
+        else "This represents the volume under the surface z = f(x, y) over the selected region."
     )
 
     return {
@@ -101,6 +95,7 @@ def calculate_double_integral(
         "final_answer": final_answer,
         "approximation": _optional_approximation(final_answer),
         "meaning": meaning,
+        "has_variable_limits": _has_variable_limits(limits),
     }
 
 
@@ -116,23 +111,14 @@ def calculate_triple_integral(
 ) -> dict[str, object]:
     """Calculate a triple integral with step-by-step details."""
     expression = parse_function(function_text, ("x", "y", "z"))
-    x_lower = _parse_limit(x_lower_text)
-    x_upper = _parse_limit(x_upper_text)
-    y_lower = _parse_limit(y_lower_text)
-    y_upper = _parse_limit(y_upper_text)
-    z_lower = _parse_limit(z_lower_text)
-    z_upper = _parse_limit(z_upper_text)
-
-    _validate_limit_order(x_lower, x_upper)
-    _validate_limit_order(y_lower, y_upper)
-    _validate_limit_order(z_lower, z_upper)
-
     variable_order = _parse_triple_order(order)
-    limits = {
-        "x": (x_lower, x_upper),
-        "y": (y_lower, y_upper),
-        "z": (z_lower, z_upper),
+
+    limit_texts = {
+        "x": (x_lower_text, x_upper_text),
+        "y": (y_lower_text, y_upper_text),
+        "z": (z_lower_text, z_upper_text),
     }
+    limits = _parse_limits(limit_texts, variable_order)
 
     step_results = _calculate_integral_steps(expression, variable_order, limits)
     final_answer = sp.simplify(step_results[-1]["result"])
@@ -153,6 +139,7 @@ def calculate_triple_integral(
         "final_answer": final_answer,
         "approximation": _optional_approximation(final_answer),
         "meaning": meaning,
+        "has_variable_limits": _has_variable_limits(limits),
     }
 
 
@@ -175,6 +162,15 @@ def format_integration_steps(result: dict[str, object]) -> str:
         lower_value, upper_value = limits[variable_name]
         lines.append(
             f"{variable_name}: {_expression_to_text(lower_value)} to {_expression_to_text(upper_value)}"
+        )
+
+    if result.get("has_variable_limits"):
+        lines.extend(
+            [
+                "",
+                "Note:",
+                "Some limits depend on outer variables, so the integration region changes shape as you move through it.",
+            ]
         )
 
     lines.extend(
@@ -211,39 +207,79 @@ def format_integration_steps(result: dict[str, object]) -> str:
     return "\n".join(lines)
 
 
-def _parse_limit(limit_text: str) -> sp.Expr:
-    """Parse one numeric integration limit."""
+def _parse_limits(
+    limit_texts: dict[str, tuple[str, str]],
+    variable_order: Sequence[str],
+) -> dict[str, tuple[sp.Expr, sp.Expr]]:
+    """Parse integration limits while allowing dependence on outer variables."""
+    limits: dict[str, tuple[sp.Expr, sp.Expr]] = {}
+
+    for index, variable_name in enumerate(variable_order):
+        lower_text, upper_text = limit_texts[variable_name]
+        allowed_variables = tuple(variable_order[index + 1 :])
+        lower_limit = _parse_limit(lower_text, allowed_variables)
+        upper_limit = _parse_limit(upper_text, allowed_variables)
+        _validate_limit_order(lower_limit, upper_limit, allowed_variables)
+        limits[variable_name] = (lower_limit, upper_limit)
+
+    return limits
+
+
+def _parse_limit(limit_text: str, allowed_variables: Sequence[str]) -> sp.Expr:
+    """Parse one limit expression, allowing only selected variables."""
     cleaned_text = (limit_text or "").strip().replace("^", "**")
     if not cleaned_text:
-        raise ValueError("Please enter numeric limits.")
+        raise ValueError("Please enter valid limits. You can use outer variables in bounds.")
 
     try:
         limit_value = sp.sympify(cleaned_text, locals=SAFE_NAMES)
     except (sp.SympifyError, TypeError):
-        raise ValueError("Please enter numeric limits.") from None
+        raise ValueError("Please enter valid limits. You can use outer variables in bounds.") from None
 
-    if limit_value.free_symbols:
-        raise ValueError("Please enter numeric limits.")
+    invalid_symbols = sorted(
+        {str(symbol) for symbol in limit_value.free_symbols if str(symbol) not in allowed_variables}
+    )
+    if invalid_symbols:
+        if allowed_variables:
+            expected = ", ".join(allowed_variables)
+            raise ValueError(
+                f"These bounds can only use the outer variables: {expected}."
+            )
+        raise ValueError("The outermost limits must be constants, not variable expressions.")
 
     limit_value = sp.simplify(limit_value)
     if limit_value.has(sp.zoo, sp.nan, sp.oo, -sp.oo):
         raise ValueError("The limits contain an undefined value.")
 
-    if limit_value.is_real is False:
+    if not limit_value.free_symbols and limit_value.is_real is False:
         raise ValueError("Please enter real numeric limits.")
 
     return limit_value
 
 
-def _validate_limit_order(lower_limit: sp.Expr, upper_limit: sp.Expr) -> None:
+def _validate_limit_order(
+    lower_limit: sp.Expr,
+    upper_limit: sp.Expr,
+    allowed_variables: Sequence[str],
+) -> None:
     """Check that the lower limit is not greater than the upper limit."""
-    try:
-        lower_value = float(sp.N(lower_limit))
-        upper_value = float(sp.N(upper_limit))
-    except (TypeError, ValueError):
-        raise ValueError("Please enter numeric limits.") from None
+    difference = sp.simplify(upper_limit - lower_limit)
 
-    if lower_value > upper_value:
+    if not difference.free_symbols:
+        try:
+            if float(sp.N(difference)) < 0:
+                raise ValueError("The lower limit cannot be greater than the upper limit.")
+            return
+        except (TypeError, ValueError):
+            raise ValueError("Please enter valid limits. You can use outer variables in bounds.") from None
+
+    invalid_symbols = sorted(
+        {str(symbol) for symbol in difference.free_symbols if str(symbol) not in allowed_variables}
+    )
+    if invalid_symbols:
+        raise ValueError("Please check the limit expressions. They use unsupported variables.")
+
+    if difference.is_negative:
         raise ValueError("The lower limit cannot be greater than the upper limit.")
 
 
@@ -275,7 +311,9 @@ def _calculate_integral_steps(
         integrated_result = sp.integrate(current_expression, (symbol, lower_limit, upper_limit))
 
         if isinstance(integrated_result, sp.Integral) or integrated_result.has(sp.Integral):
-            integrated_result = sp.N(sp.Integral(current_expression, (symbol, lower_limit, upper_limit)))
+            integrated_result = sp.N(
+                sp.Integral(current_expression, (symbol, lower_limit, upper_limit))
+            )
 
         integrated_result = sp.simplify(integrated_result)
         if integrated_result.has(sp.zoo, sp.nan, sp.oo, -sp.oo):
@@ -333,6 +371,14 @@ def _optional_approximation(expression: sp.Expr) -> str | None:
         return None
 
     return decimal_text
+
+
+def _has_variable_limits(limits: dict[str, tuple[sp.Expr, sp.Expr]]) -> bool:
+    """Return True when any bound depends on a variable."""
+    for lower_limit, upper_limit in limits.values():
+        if lower_limit.free_symbols or upper_limit.free_symbols:
+            return True
+    return False
 
 
 def _expression_to_text(expression: sp.Expr) -> str:

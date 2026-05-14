@@ -5,6 +5,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
+from graph_3d_tab import Graph3DTab
 from integration_tab import DoubleIntegrationTab, TripleIntegrationTab
 
 
@@ -16,7 +17,7 @@ class SmartGraphApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title(self.APP_TITLE)
-        self.root.minsize(1180, 860)
+        self.root.minsize(1260, 900)
         self.root.configure(bg="#f5f7fb")
 
         self.configure_styles()
@@ -44,7 +45,7 @@ class SmartGraphApp:
 
         heading = tk.Label(
             main_frame,
-            text="SmartGraph - Visual Double and Triple Integration Tool",
+            text="SmartGraph - Variable-Limit Integration and Interactive 3D Graph Tool",
             font=("Arial", 18, "bold"),
             bg="#f5f7fb",
             fg="#1f2d3d",
@@ -54,8 +55,8 @@ class SmartGraphApp:
         subtitle = tk.Label(
             main_frame,
             text=(
-                "Use the graph explanations to understand the integration region, "
-                "and follow the larger step-by-step output panel on the right."
+                "Use variable bounds in the calculus tabs, or open the 3D graph tab to draw and shade "
+                "objects around the fixed origin."
             ),
             font=("Arial", 11),
             bg="#f5f7fb",
@@ -68,6 +69,8 @@ class SmartGraphApp:
 
         double_tab = DoubleIntegrationTab(notebook)
         triple_tab = TripleIntegrationTab(notebook)
+        graph_3d_tab = Graph3DTab(notebook)
 
         notebook.add(double_tab, text="Double Integration")
         notebook.add(triple_tab, text="Triple Integration")
+        notebook.add(graph_3d_tab, text="3D Graph")
