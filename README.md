@@ -1,6 +1,6 @@
 # SmartGraph
 
-SmartGraph is a Python desktop app for visual calculus and 3D graph exploration. The desktop side uses Tkinter for double and triple integration tools, while the advanced 3D graph studio is powered by a local Three.js workspace launched from the `3D Graph` tab.
+SmartGraph is a Python desktop app for visual calculus and 3D graph exploration. The desktop side uses Tkinter for double and triple integration tools, while the advanced 3D graph studio is powered by a local Three.js workspace launched directly from the `3D Graph` tab as an app-style window.
 
 ## Run the app
 
@@ -11,6 +11,57 @@ pip install -r requirements.txt
 python main.py
 ```
 
+### How to run SmartGraph
+
+1. Open PowerShell or Command Prompt.
+2. Go to the project folder:
+
+```bash
+cd SmartGraph-
+```
+
+3. Install the Python dependency:
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Start the desktop app:
+
+```bash
+python main.py
+```
+
+### How to open the 3D Graph Studio
+
+The 3D studio is connected to the desktop app.
+
+1. Run SmartGraph with:
+
+```bash
+python main.py
+```
+
+2. In the SmartGraph window, click the `3D Graph` tab.
+3. SmartGraph will automatically start the local server and open the 3D studio as an app-style window.
+4. If the window is behind another app, click `Open / Focus 3D Studio` inside the `3D Graph` tab.
+
+### Direct browser fallback for the 3D Graph Studio
+
+If you want to open the 3D studio manually without going through the desktop app:
+
+1. In the project folder, start a local server:
+
+```bash
+python -m http.server 8123
+```
+
+2. Open this address in your browser:
+
+```text
+http://127.0.0.1:8123/src/3d-graph/UI3DPanel.html
+```
+
 ## Main features
 
 - Double integration with symbolic steps and adaptive region previews
@@ -19,7 +70,7 @@ python main.py
 
 ## 3D Graph Feature
 
-The `3D Graph` tab launches a full Three.js workspace served locally from `src/3d-graph/`.
+The `3D Graph` tab launches a full Three.js workspace served locally from `src/3d-graph/`. SmartGraph now opens it automatically when that tab is selected, so the desktop flow and the 3D studio feel connected instead of separate.
 
 Included tools:
 

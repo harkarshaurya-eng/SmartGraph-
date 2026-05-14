@@ -74,3 +74,10 @@ class SmartGraphApp:
         notebook.add(double_tab, text="Double Integration")
         notebook.add(triple_tab, text="Triple Integration")
         notebook.add(graph_3d_tab, text="3D Graph")
+
+        def on_tab_changed(event: tk.Event) -> None:
+            selected_widget = notebook.nametowidget(notebook.select())
+            if selected_widget == graph_3d_tab:
+                graph_3d_tab.handle_selected()
+
+        notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
