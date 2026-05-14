@@ -45,7 +45,7 @@ class SmartGraphApp:
 
         heading = tk.Label(
             main_frame,
-            text="SmartGraph - Adaptive Integration Graphs and Interactive 3D Graph Tool",
+            text="SmartGraph - Adaptive Integration Graphs and Advanced 3D Graph Studio",
             font=("Arial", 18, "bold"),
             bg="#f5f7fb",
             fg="#1f2d3d",
@@ -56,7 +56,7 @@ class SmartGraphApp:
             main_frame,
             text=(
                 "Use variable bounds in the calculus tabs to preview the actual region from your limits, "
-                "or open the 3D graph tab to draw and shade objects around the fixed origin."
+                "or open the 3D Graph tab to launch the full Three.js workspace for drawing, shading, and triple integration."
             ),
             font=("Arial", 11),
             bg="#f5f7fb",

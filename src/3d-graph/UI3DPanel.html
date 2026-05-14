@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartGraph 3D Graph</title>
+    <link rel="stylesheet" href="./styles3d.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <aside class="tool-sidebar" id="tool-sidebar">
+        <div class="brand-block">
+          <h1>SmartGraph</h1>
+          <p>Draw in 3D, shade regions, and visualize triple integrals.</p>
+        </div>
+
+        <div class="sidebar-nav">
+          <button class="sidebar-tab active" data-panel-target="panel-draw">Draw</button>
+          <button class="sidebar-tab" data-panel-target="panel-shade">Shade</button>
+          <button class="sidebar-tab" data-panel-target="panel-integral">∭ Integral</button>
+          <button class="sidebar-tab" data-panel-target="panel-settings">Settings</button>
+        </div>
+
+        <div class="panel-stack">
+          <section class="tool-panel active" id="panel-draw">
+            <h2>Draw Tools</h2>
+            <p class="panel-copy">Add dots, lines, vectors, curves, surfaces, implicit surfaces, and polygons.</p>
+            <div id="draw-notice" class="panel-notice" data-error="false"></div>
+
+            <details open>
+              <summary>Point / Dot</summary>
+              <div class="field-grid compact-grid">
+                <label>X <input id="point-x" type="number" value="1" step="any" /></label>
+                <label>Y <input id="point-y" type="number" value="2" step="any" /></label>
+                <label>Z <input id="point-z" type="number" value="3" step="any" /></label>
+                <label>Color <input id="point-color" type="color" value="#60a5fa" /></label>
+                <label>Radius <input id="point-radius" type="number" value="0.08" min="0.01" step="0.01" /></label>
+                <label class="checkbox-row"><input id="point-label" type="checkbox" checked /> Show label</label>
+              </div>
+              <button id="draw-point-button" class="primary-button">Draw</button>
+            </details>
+
+            <details>
+              <summary>Line Segment</summary>
+              <div class="field-grid compact-grid">
+                <label>X1 <input id="line-start-x" type="number" value="0" step="any" /></label>
+                <label>Y1 <input id="line-start-y" type="number" value="0" step="any" /></label>
+                <label>Z1 <input id="line-start-z" type="number" value="0" step="any" /></label>
+                <label>X2 <input id="line-end-x" type="number" value="3" step="any" /></label>
+                <label>Y2 <input id="line-end-y" type="number" value="2" step="any" /></label>
+                <label>Z2 <input id="line-end-z" type="number" value="1" step="any" /></label>
+                <label>Color <input id="line-color" type="color" value="#38bdf8" /></label>
+                <label>Width <input id="line-width" type="number" value="0.03" min="0.01" step="0.01" /></label>
+              </div>
+              <button id="draw-line-button" class="primary-button">Draw</button>
+            </details>
+
+            <details>
+              <summary>Ray / Vector Arrow</summary>
+              <div class="field-grid compact-grid">
+                <label>Ox <input id="arrow-origin-x" type="number" value="0" step="any" /></label>
+                <label>Oy <input id="arrow-origin-y" type="number" value="0" step="any" /></label>
+                <label>Oz <input id="arrow-origin-z" type="number" value="0" step="any" /></label>
+                <label>dx <input id="arrow-direction-x" type="number" value="1" step="any" /></label>
+                <label>dy <input id="arrow-direction-y" type="number" value="1" step="any" /></label>
+                <label>dz <input id="arrow-direction-z" type="number" value="0.5" step="any" /></label>
+                <label>Length <input id="arrow-length" type="number" value="2" min="0.01" step="0.1" /></label>
+                <label>Color <input id="arrow-color" type="color" value="#fb923c" /></label>
+              </div>
+              <button id="draw-arrow-button" class="primary-button">Draw</button>
+            </details>
+
+            <details>
+              <summary>Parametric Curve</summary>
+              <div class="field-grid">
+                <label>x(t) <input id="curve-x" type="text" value="cos(t)" /></label>
+                <label>y(t) <input id="curve-y" type="text" value="sin(t)" /></label>
+                <label>z(t) <input id="curve-z" type="text" value="t/5" /></label>
+                <label>t min <input id="curve-t-min" type="number" value="0" step="any" /></label>
+                <label>t max <input id="curve-t-max" type="number" value="12.566370614" step="any" /></label>
+                <label>Steps <input id="curve-steps" type="number" value="200" min="10" max="1500" step="1" /></label>
+                <label>Color <input id="curve-color" type="color" value="#8b5cf6" /></label>
+              </div>
+              <button id="draw-curve-button" class="primary-button">Draw</button>
+            </details>
+
+            <details>
+              <summary>Surface Plot z = f(x, y)</summary>
+              <div class="field-grid">
+                <label>z = <input id="surface-expression" type="text" value="sin(x) * cos(y)" /></label>
+                <label>x min <input id="surface-x-min" type="number" value="-4" step="any" /></label>
+                <label>x max <input id="surface-x-max" type="number" value="4" step="any" /></label>
+                <label>x steps <input id="surface-x-steps" type="number" value="40" min="4" max="160" step="1" /></label>
+                <label>y min <input id="surface-y-min" type="number" value="-4" step="any" /></label>
+                <label>y max <input id="surface-y-max" type="number" value="4" step="any" /></label>
+                <label>y steps <input id="surface-y-steps" type="number" value="40" min="4" max="160" step="1" /></label>
+                <label class="checkbox-row"><input id="surface-wireframe" type="checkbox" checked /> Wireframe overlay</label>
+              </div>
+              <button id="draw-surface-button" class="primary-button">Draw</button>
+            </details>
+
+            <details>
+              <summary>Implicit Surface F(x, y, z) = 0</summary>
+              <div class="field-grid">
+                <label>F(x, y, z) <input id="implicit-expression" type="text" value="x^2 + y^2 + z^2 - 4" /></label>
+                <label>x min <input id="implicit-x-min" type="number" value="-3" step="any" /></label>
+                <label>x max <input id="implicit-x-max" type="number" value="3" step="any" /></label>
+                <label>y min <input id="implicit-y-min" type="number" value="-3" step="any" /></label>
+                <label>y max <input id="implicit-y-max" type="number" value="3" step="any" /></label>
+                <label>z min <input id="implicit-z-min" type="number" value="-3" step="any" /></label>
+                <label>z max <input id="implicit-z-max" type="number" value="3" step="any" /></label>
+                <label>Resolution <input id="implicit-resolution" type="number" value="30" min="16" max="50" step="1" /></label>
+                <label>Color <input id="implicit-color" type="color" value="#22d3ee" /></label>
+                <label>Opacity <input id="implicit-opacity" type="number" value="0.65" min="0.15" max="0.95" step="0.05" /></label>
+              </div>
+              <button id="draw-implicit-button" class="primary-button">Draw</button>
+            </details>
+
+            <details>
+              <summary>Polygon / Planar Shape</summary>
+              <div class="field-grid">
+                <label>Vertices
+                  <textarea id="polygon-vertices" rows="4">0,0,0
+2,0,0
+2,2,0
+0,2,0</textarea>
+                </label>
+                <label>Fill <input id="polygon-fill" type="color" value="#34d399" /></label>
+                <label>Edge <input id="polygon-edge" type="color" value="#064e3b" /></label>
+              </div>
+              <button id="draw-polygon-button" class="primary-button">Draw</button>
+            </details>
+          </section>
+
+          <section class="tool-panel" id="panel-shade">
+            <h2>Shade Tools</h2>
+            <p class="panel-copy">Fill bounded areas or volumes with semi-transparent surfaces.</p>
+            <div id="shade-notice" class="panel-notice" data-error="false"></div>
+
+            <div class="field-grid compact-grid shade-options">
+              <label>Opacity <input id="shade-opacity" type="number" value="0.4" min="0.1" max="0.9" step="0.05" /></label>
+              <label class="checkbox-row"><input id="shade-wireframe" type="checkbox" /> Show wireframe</label>
+            </div>
+
+            <details open>
+              <summary>Between Two Surfaces</summary>
+              <div class="field-grid">
+                <label>f(x, y) <input id="shade-f" type="text" value="sin(x) + cos(y)" /></label>
+                <label>g(x, y) <input id="shade-g" type="text" value="0.3 * sin(y)" /></label>
+                <label>x min <input id="shade-surface-x-min" type="number" value="-3" step="any" /></label>
+                <label>x max <input id="shade-surface-x-max" type="number" value="3" step="any" /></label>
+                <label>x steps <input id="shade-surface-x-steps" type="number" value="24" min="4" max="120" step="1" /></label>
+                <label>y min <input id="shade-surface-y-min" type="number" value="-3" step="any" /></label>
+                <label>y max <input id="shade-surface-y-max" type="number" value="3" step="any" /></label>
+                <label>y steps <input id="shade-surface-y-steps" type="number" value="24" min="4" max="120" step="1" /></label>
+                <label>Color <input id="shade-between-color" type="color" value="#f59e0b" /></label>
+              </div>
+              <button id="shade-between-button" class="primary-button">Shade</button>
+            </details>
+
+            <details>
+              <summary>Volume F(x, y, z) ≤ 0</summary>
+              <div class="field-grid">
+                <label>F(x, y, z) <input id="shade-volume-expression" type="text" value="x^2 + y^2 + z^2 - 4" /></label>
+                <label>x min <input id="shade-volume-x-min" type="number" value="-3" step="any" /></label>
+                <label>x max <input id="shade-volume-x-max" type="number" value="3" step="any" /></label>
+                <label>y min <input id="shade-volume-y-min" type="number" value="-3" step="any" /></label>
+                <label>y max <input id="shade-volume-y-max" type="number" value="3" step="any" /></label>
+                <label>z min <input id="shade-volume-z-min" type="number" value="-3" step="any" /></label>
+                <label>z max <input id="shade-volume-z-max" type="number" value="3" step="any" /></label>
+                <label>Resolution <input id="shade-volume-resolution" type="number" value="30" min="16" max="50" step="1" /></label>
+                <label>Color <input id="shade-volume-color" type="color" value="#0ea5e9" /></label>
+              </div>
+              <button id="shade-volume-button" class="primary-button">Shade</button>
+            </details>
+
+            <details>
+              <summary>Under a Curve (Curtain)</summary>
+              <div class="field-grid">
+                <label>x(t) <input id="curtain-x" type="text" value="cos(t)" /></label>
+                <label>y(t) <input id="curtain-y" type="text" value="sin(t)" /></label>
+                <label>z(t) <input id="curtain-z" type="text" value="1 + 0.5 * sin(2*t)" /></label>
+                <label>t min <input id="curtain-t-min" type="number" value="0" step="any" /></label>
+                <label>t max <input id="curtain-t-max" type="number" value="6.283185307" step="any" /></label>
+                <label>Steps <input id="curtain-steps" type="number" value="180" min="10" max="1200" step="1" /></label>
+                <label>Baseline z = <input id="curtain-baseline" type="number" value="0" step="any" /></label>
+                <label>Color <input id="curtain-color" type="color" value="#8b5cf6" /></label>
+              </div>
+              <button id="shade-curtain-button" class="primary-button">Shade</button>
+            </details>
+
+            <details>
+              <summary>Polygon / Convex Region on a Plane</summary>
+              <div class="field-grid">
+                <label>Vertices
+                  <textarea id="shade-polygon-vertices" rows="4">0,0,0
+2,0,0
+2,1.5,0
+0.5,2.2,0
+0,1,0</textarea>
+                </label>
+                <label>Color <input id="shade-polygon-color" type="color" value="#10b981" /></label>
+              </div>
+              <button id="shade-polygon-button" class="primary-button">Shade</button>
+            </details>
+          </section>
+
+          <section class="tool-panel" id="panel-integral">
+            <h2>∭ Triple Integral</h2>
+            <p class="panel-copy">Composite Simpson's rule runs in a worker so the UI stays responsive.</p>
+            <div id="triple-notice" class="panel-notice" data-error="false"></div>
+
+            <div id="triple-integral-presets" class="preset-list"></div>
+
+            <div class="field-grid">
+              <label>f(x, y, z) <input data-field="integrand" type="text" value="x * y * z" /></label>
+              <label>x min <input data-field="xMin" type="text" value="0" /></label>
+              <label>x max <input data-field="xMax" type="text" value="1" /></label>
+              <label>y min(x) <input data-field="yMin" type="text" value="0" /></label>
+              <label>y max(x) <input data-field="yMax" type="text" value="1" /></label>
+              <label>z min(x, y) <input data-field="zMin" type="text" value="0" /></label>
+              <label>z max(x, y) <input data-field="zMax" type="text" value="1" /></label>
+              <label>n_x <input data-field="nX" type="number" value="40" min="2" max="80" step="1" /></label>
+              <label>n_y <input data-field="nY" type="number" value="40" min="2" max="80" step="1" /></label>
+              <label>n_z <input data-field="nZ" type="number" value="40" min="2" max="80" step="1" /></label>
+              <label>Region Color <input id="triple-region-color" type="color" value="#22c55e" /></label>
+              <label>Region Opacity <input id="triple-region-opacity" type="number" value="0.35" min="0.1" max="0.9" step="0.05" /></label>
+              <label class="checkbox-row"><input id="triple-region-wireframe" type="checkbox" /> Region wireframe</label>
+            </div>
+
+            <div class="button-row">
+              <button id="triple-integral-run" class="primary-button">Compute</button>
+              <button id="triple-integral-animate" class="secondary-button">Animate Slices</button>
+              <button id="triple-integral-clear" class="secondary-button">Clear Visuals</button>
+            </div>
+
+            <progress id="triple-progress" value="0" max="100"></progress>
+            <pre id="triple-output" class="result-box">Load a preset or enter your own integral to compute.</pre>
+          </section>
+
+          <section class="tool-panel" id="panel-settings">
+            <h2>Scene Settings</h2>
+            <div class="field-grid">
+              <label>Axis range ± <input id="axis-range" type="number" value="10" min="2" max="50" step="1" /></label>
+              <label>Axis label size <input id="axis-font-size" type="number" value="48" min="18" max="80" step="2" /></label>
+              <label>Background <input id="background-color" type="color" value="#0f172a" /></label>
+              <label class="checkbox-row"><input id="grid-xz" type="checkbox" checked /> XZ grid</label>
+              <label class="checkbox-row"><input id="grid-xy" type="checkbox" /> XY grid</label>
+              <label class="checkbox-row"><input id="grid-yz" type="checkbox" /> YZ grid</label>
+            </div>
+            <button id="export-png" class="primary-button">Export PNG</button>
+          </section>
+        </div>
+      </aside>
+
+      <main class="canvas-stage">
+        <header class="canvas-toolbar">
+          <div class="button-row">
+            <button id="camera-front" class="secondary-button">Front</button>
+            <button id="camera-top" class="secondary-button">Top</button>
+            <button id="camera-side" class="secondary-button">Side</button>
+            <button id="camera-isometric" class="secondary-button">Isometric</button>
+            <button id="camera-reset" class="primary-button">Reset View</button>
+          </div>
+          <div class="toolbar-copy">
+            <span>Left-drag to orbit</span>
+            <span>Scroll or pinch to zoom</span>
+            <span>Panning disabled so the origin stays fixed</span>
+          </div>
+        </header>
+
+        <div class="canvas-wrap">
+          <div id="fps-chip" class="fps-chip">0 FPS</div>
+          <div id="three-canvas" class="three-canvas"></div>
+        </div>
+      </main>
+
+      <aside class="object-manager" id="object-manager">
+        <div class="object-manager-header">
+          <h2>Object Manager</h2>
+          <button id="toggle-object-manager" class="icon-button">⇔</button>
+        </div>
+        <div id="object-status" class="object-status">Scene ready.</div>
+        <div id="object-list" class="object-list"></div>
+        <button id="clear-all-objects" class="danger-button">Clear All</button>
+      </aside>
+    </div>
+
+    <script type="module">
+      import { ExpressionParser } from "./ExpressionParser.js";
+      import { ThreeDGraph } from "./ThreeDGraph.js";
+      import { DrawTool } from "./DrawTool.js";
+      import { ShadeTool } from "./ShadeTool.js";
+      import { TripleIntegralController } from "./TripleIntegral.js";
+      import { ObjectManager } from "./ObjectManager.js";
+
+      const parser = new ExpressionParser();
+      const graph = new ThreeDGraph({
+        canvasContainer: document.querySelector("#three-canvas"),
+        fpsElement: document.querySelector("#fps-chip"),
+        axisRangeInput: document.querySelector("#axis-range"),
+        xyGridToggle: document.querySelector("#grid-xy"),
+        xzGridToggle: document.querySelector("#grid-xz"),
+        yzGridToggle: document.querySelector("#grid-yz"),
+        backgroundInput: document.querySelector("#background-color"),
+        fontSizeInput: document.querySelector("#axis-font-size"),
+      });
+
+      const objectManager = new ObjectManager({
+        graph,
+        listElement: document.querySelector("#object-list"),
+        statusElement: document.querySelector("#object-status"),
+        clearButton: document.querySelector("#clear-all-objects"),
+      });
+
+      new DrawTool({
+        graph,
+        parser,
+        objectManager,
+        root: document.querySelector("#panel-draw"),
+        noticeElement: document.querySelector("#draw-notice"),
+      });
+
+      new ShadeTool({
+        graph,
+        parser,
+        objectManager,
+        root: document.querySelector("#panel-shade"),
+        noticeElement: document.querySelector("#shade-notice"),
+      });
+
+      new TripleIntegralController({
+        graph,
+        parser,
+        objectManager,
+        root: document.querySelector("#panel-integral"),
+        noticeElement: document.querySelector("#triple-notice"),
+        outputElement: document.querySelector("#triple-output"),
+        progressElement: document.querySelector("#triple-progress"),
+      });
+
+      document.querySelector("#camera-front").addEventListener("click", () => graph.setCameraPreset("front", true));
+      document.querySelector("#camera-top").addEventListener("click", () => graph.setCameraPreset("top", true));
+      document.querySelector("#camera-side").addEventListener("click", () => graph.setCameraPreset("side", true));
+      document.querySelector("#camera-isometric").addEventListener("click", () => graph.setCameraPreset("isometric", true));
+      document.querySelector("#camera-reset").addEventListener("click", () => graph.resetView());
+      document.querySelector("#export-png").addEventListener("click", () => graph.exportPng());
+
+      document.querySelectorAll(".sidebar-tab").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".sidebar-tab").forEach((item) => item.classList.remove("active"));
+          document.querySelectorAll(".tool-panel").forEach((panel) => panel.classList.remove("active"));
+          button.classList.add("active");
+          document.querySelector(`#${button.dataset.panelTarget}`).classList.add("active");
+        });
+      });
+
+      document.querySelector("#toggle-object-manager").addEventListener("click", () => {
+        document.querySelector("#object-manager").classList.toggle("collapsed");
+      });
+    </script>
+  </body>
+</html>
