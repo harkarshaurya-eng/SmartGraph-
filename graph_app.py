@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from graph_3d_tab import Graph3DTab
+from integral_graph_tab import IntegralGraphTab
 from integration_tab import DoubleIntegrationTab, TripleIntegrationTab
 
 
@@ -45,7 +46,7 @@ class SmartGraphApp:
 
         heading = tk.Label(
             main_frame,
-            text="SmartGraph - Adaptive Integration Graphs and Advanced 3D Graph Studio",
+            text="SmartGraph - Adaptive Integration Graphs, Integral Visuals, and Advanced 3D Graph Studio",
             font=("Arial", 18, "bold"),
             bg="#f5f7fb",
             fg="#1f2d3d",
@@ -56,7 +57,8 @@ class SmartGraphApp:
             main_frame,
             text=(
                 "Use variable bounds in the calculus tabs to preview the actual region from your limits, "
-                "or open the 3D Graph tab to launch the full Three.js workspace for drawing, shading, and triple integration."
+                "open the Integral Graph Visualiser for preset SVG study diagrams, or launch the 3D Graph tab "
+                "for the full Three.js workspace for drawing, shading, and triple integration."
             ),
             font=("Arial", 11),
             bg="#f5f7fb",
@@ -69,15 +71,19 @@ class SmartGraphApp:
 
         double_tab = DoubleIntegrationTab(notebook)
         triple_tab = TripleIntegrationTab(notebook)
+        integral_graph_tab = IntegralGraphTab(notebook)
         graph_3d_tab = Graph3DTab(notebook)
 
         notebook.add(double_tab, text="Double Integration")
         notebook.add(triple_tab, text="Triple Integration")
+        notebook.add(integral_graph_tab, text="Integral Graph Visualiser")
         notebook.add(graph_3d_tab, text="3D Graph")
 
         def on_tab_changed(event: tk.Event) -> None:
             selected_widget = notebook.nametowidget(notebook.select())
-            if selected_widget == graph_3d_tab:
+            if selected_widget == integral_graph_tab:
+                integral_graph_tab.handle_selected()
+            elif selected_widget == graph_3d_tab:
                 graph_3d_tab.handle_selected()
 
         notebook.bind("<<NotebookTabChanged>>", on_tab_changed)

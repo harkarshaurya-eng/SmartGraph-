@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartGraph Integral Graph Visualiser</title>
+    <link rel="stylesheet" href="./stylesIntegralGraph.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">SmartGraph</p>
+          <h1>Integral Graph Visualiser</h1>
+          <p class="hero-text">
+            Select a preset calculus question to preview its hard-coded region or volume diagram.
+            These views are visual study aids only, so the page does not solve the integral or run
+            symbolic math.
+          </p>
+        </div>
+
+        <div class="hero-note">
+          <span>17 preset questions</span>
+          <span>Responsive SVG diagrams</span>
+          <span>Reset and compare quickly</span>
+        </div>
+      </header>
+
+      <main class="visualiser-grid">
+        <section class="panel control-panel">
+          <div class="panel-block">
+            <label class="field-label" for="integral-question-select">Select Integral Question</label>
+            <select id="integral-question-select">
+              <option value="">Choose a preset question</option>
+            </select>
+          </div>
+
+          <div class="button-row">
+            <button id="reset-integral-selection" class="secondary-button" type="button">
+              Reset Selection
+            </button>
+          </div>
+
+          <div class="expression-card">
+            <h2>Selected Expression</h2>
+            <div id="selected-expression" class="expression-box">
+              Choose a question to preview its region or volume.
+            </div>
+          </div>
+
+          <div class="detail-grid">
+            <article class="detail-card">
+              <span class="detail-label">Region</span>
+              <p id="selected-region" class="detail-copy">
+                The selected question's geometric bounds will appear here.
+              </p>
+            </article>
+
+            <article class="detail-card">
+              <span class="detail-label">Diagram</span>
+              <p id="selected-draw-summary" class="detail-copy">
+                Each preview uses a fixed SVG sketch for the matching graph type.
+              </p>
+            </article>
+          </div>
+
+          <div class="description-card">
+            <h2>Description</h2>
+            <p id="selected-description" class="description-copy">
+              Start with any dropdown option to inspect the relevant 2D region, surface, or shaded
+              3D volume.
+            </p>
+          </div>
+        </section>
+
+        <section class="panel diagram-panel">
+          <div class="diagram-header">
+            <div>
+              <p class="eyebrow subtle">Integral graph preview</p>
+              <h2 id="diagram-title">Integral Graph Visualiser</h2>
+            </div>
+
+            <div id="diagram-graph-type" class="diagram-chip">Awaiting selection</div>
+          </div>
+
+          <div id="diagram-stage" class="diagram-stage" aria-live="polite"></div>
+
+          <p id="diagram-caption" class="diagram-caption">
+            Each preview is a hand-crafted SVG diagram that highlights the region or bounded solid
+            named by the selected question.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <script type="module">
+      import { IntegralGraphVisualizer } from "./IntegralGraphVisualizer.js";
+
+      new IntegralGraphVisualizer({
+        selectElement: document.querySelector("#integral-question-select"),
+        resetButton: document.querySelector("#reset-integral-selection"),
+        expressionElement: document.querySelector("#selected-expression"),
+        regionElement: document.querySelector("#selected-region"),
+        drawSummaryElement: document.querySelector("#selected-draw-summary"),
+        descriptionElement: document.querySelector("#selected-description"),
+        titleElement: document.querySelector("#diagram-title"),
+        graphTypeElement: document.querySelector("#diagram-graph-type"),
+        captionElement: document.querySelector("#diagram-caption"),
+        diagramElement: document.querySelector("#diagram-stage"),
+      });
+    </script>
+  </body>
+</html>
